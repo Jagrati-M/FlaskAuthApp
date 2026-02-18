@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, flash
 from flask_sqlalchemy import SQLAlchemy
 import bcrypt
 
@@ -32,15 +32,44 @@ def index():
 @app.route("/register", methods=['GET','POST'])
 def register():
     if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        password = request.form['password']
-        
+        name = request.form.get('name')
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        # Name validation
+        if not name:
+            flash("Name cannot be empty", "danger")
+            return redirect('/register')
+
+        # Email validation
+        if not email:
+            flash("Email cannot be empty", "danger")
+            return redirect('/register')
+
+        # Password validation
+        if not password:
+            flash("Password cannot be empty", "danger")
+            return redirect('/register')
+
+        # Password length validation
+        if len(password) < 6:
+            flash("Password must be at least 6 characters long", "danger")
+            return redirect('/register')
+
+        # Email uniqueness check
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            flash("Email already registered", "danger")
+            return redirect('/register')
+
+        # If all validations pass
         new_user = User(name=name, email=email, password=password)
         db.session.add(new_user)
         db.session.commit()
+
+        flash("Registration successful! Please login.", "success")
         return redirect('/login')
-    
+
     return render_template("register.html")
 
 @app.route("/login", methods=['GET','POST'])
